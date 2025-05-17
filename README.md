@@ -2,9 +2,11 @@
 
 R package in development
 
-Current Version 
+Current Version 0.6.0
 
+Package for reading data from Thermo Scientific (mass spectrometry) raw files & processing files
 
+Depends on dataInfo package & is compatible with MS.Analysis package
 
 Work in progress!
 
