@@ -61,15 +61,8 @@ readChromatogram.Thermo <- function(filename,
     result <- list()
     #    if (type == "xic"){
     if (!identical(additionalInfo, NA )){
-      if (dataInfo::is.Class(additionalInfo, "data.frame")){
-        if (length(mz) != nrow(additionalInfo)){
-          additionalInfo <- purrr::map_df(1:length(mz), ~additionalInfo[1,])
-        }
-      } else {
-        if (length(additionalInfo) != length(mz)){
-          additionalInfo <- rep(additionalInfo[1], length(mz))
-        }
-
+      if (!dataInfo::is.Class(additionalInfo, "data.frame")){
+          additionalInfo <- as.data.frame(additionalInfo)
       }
     }
     if (type == "xic"){
@@ -86,19 +79,7 @@ readChromatogram.Thermo <- function(filename,
                       type = "xic")
         )()
         if (!identical(additionalInfo, NA)){
-          if (dataInfo::is.Class(additionalInfo, "data.frame")){
-            toAdd <- as.list(additionalInfo[counter,])
-            names(toAdd) <- colnames(additionalInfo)
-          } else {
-            if (!identical(additionalInfo[[counter]], NA)){
-              toAdd <- additionalInfo[counter]
-            } else {
-              toAdd <- NA
-            }
-          }
-          if (!identical(toAdd, NA)){
-            result[[counter]]$info <- append(result[[counter]]$info, toAdd)
-          }
+          result[[counter]]$info <- dplyr::bind_cols(result[[counter]]$info, additionalInfo)
         }
       }
     } else {
@@ -115,13 +96,8 @@ readChromatogram.Thermo <- function(filename,
                     filter = filter,
                     type = type)
       )()
-      if (!identical(additionalInfo[[1]], NA)){
-        if (dataInfo::is.Class(additionalInfo[[1]], "data.frame")){
-          cnames <- colnames(additionalInfo[[1]])
-          additionalInfo[[1]] <- as.list(additionalInfo[[1]])
-          names(additionalInfo[[1]]) < cnames
-        }
-        result[[1]]$info <- append(result[[1]]$info, additionalInfo)
+      if (!identical(additionalInfo, NA)){
+        result[[1]]$info <- dplyr::bind_cols(result[[1]]$info, additionalInfo)
       }
     }
     return(result)
@@ -202,7 +178,7 @@ readSpectrum.Thermo <- function(filename,
                          microScanCount = as.integer(tempData[[counter]][["Micro Scan Count:"]]),
                          ionInjectionTime = as.numeric(tempData[[counter]]["Ion Injection Time (ms):"]),
                          elapsedTime = as.numeric(tempData[[counter]]["Elapsed Scan Time (sec):"])))
-
+        
       } else {
         if (parameters == "full"){
           whichOnes <- which(unname(purrr::map_int(tempData[[counter]], ~length(.x))) == 1)
@@ -212,7 +188,7 @@ readSpectrum.Thermo <- function(filename,
             tempData[[counter]] <- tempData[[counter]][-c(removeOdd)]
           }
           names(tempData[[counter]]) <- dataInfo::strReplaceAll(names(tempData[[counter]]),
-                                                pattern = c(" ", ":", "/", "\\(", "\\)"), replacement = "")
+                                                                pattern = c(" ", ":", "/", "\\(", "\\)"), replacement = "")
           findDoubles <- which(table(names(tempData[[counter]])) > 1)
           for (counter2 in 1:length(findDoubles)){
             whichOnes <- which(names(tempData[[counter]]) == names(findDoubles[counter2]))
@@ -228,8 +204,8 @@ readSpectrum.Thermo <- function(filename,
         }
       }
       result[[counter]] <- dataInfo::readData(dataframe = data,
-                                    columnNames = c("mz","intensity"),
-                                    info = info)()
+                                              columnNames = c("mz","intensity"),
+                                              info = info)()
     }
     return(result)
   }
@@ -289,9 +265,9 @@ fileInfo.Thermo <- function(filename, readIndex = TRUE, collapseCharacter = "-")
                             pattern = "\\)", replacement = "")
     return(
       dataInfo::readDataFrame(dataframe = dataInfo::ifelseProper(identical(tempIndex, NA),
-                                             NA,
-                                             list(tempIndex)),
-                    info = tempList)()
+                                                                 NA,
+                                                                 list(tempIndex)),
+                              info = tempList)()
     )
   }
 }
@@ -490,16 +466,16 @@ utils::globalVariables(c("StartTime", "distance"))
 #'
 #' @export
 getScans <- function(
-  scanIndex = NA,
-  rt = 1,
-  rtLimits = c(0.5, 0.5),
-  scanType = NA,
-  precursorMass = NA,
-  precursorLimits = c(0.05, 0.05),
-  MSOrder = NA,
-  charge = NA,
-  sortClose = TRUE,
-  limitNr = 1
+    scanIndex = NA,
+    rt = 1,
+    rtLimits = c(0.5, 0.5),
+    scanType = NA,
+    precursorMass = NA,
+    precursorLimits = c(0.05, 0.05),
+    MSOrder = NA,
+    charge = NA,
+    sortClose = TRUE,
+    limitNr = 1
 ) {
   if (identical(scanIndex, NA)) {
     return(NA)
